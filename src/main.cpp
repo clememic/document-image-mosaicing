@@ -64,7 +64,42 @@ int main(int argc, char** argv) {
 	// TODO
 
 	/* Warp images */
-	// TODO
+	// Compute median focal length between cameras for warping scale
+	// TODO Use mean focal instead?
+	float warping_scale;
+	vector<double> focals;
+	for (unsigned int i = 0; i < cameras.size(); i++) {
+		focals.push_back(cameras[i].focal);
+	}
+	int num_focals = focals.size();
+	sort(focals.begin(), focals.end());
+	if (num_focals % 2 == 1) {
+		warping_scale = focals[num_focals/2];
+	}
+	else {
+		warping_scale = (focals[num_focals/2 - 1] + focals[num_focals/2]) * 0.5;
+	}
+	// Prepare image masks
+	vector<Mat> masks(num_imgs);
+	for (int i = 0; i < num_imgs; i++) {
+		masks[i].create(imgs[i].size(), CV_8U);
+		masks[i].setTo(Scalar::all(255));
+	}
+	// Perform warping on images and their masks
+	Ptr<WarperCreator> warper_creator = new cv::PlaneWarper();
+	Ptr<RotationWarper> warper = warper_creator->create(warping_scale);
+	vector<Mat> warped_imgs(num_imgs);
+	vector<Mat> warped_masks(num_imgs);
+	vector<Point> warped_corners(num_imgs);
+	vector<Size> warped_imgs_sizes(num_imgs);
+	for (int i = 0; i < num_imgs; i++) {
+		Mat K;
+		cameras[i].K().convertTo(K, CV_32F);
+		// TODO Try different pixel interpolation/extrapolation methods?
+		warped_corners[i] = warper->warp(imgs[i], K, cameras[i].R, INTER_LINEAR, BORDER_REFLECT, warped_imgs[i]);
+		warper->warp(masks[i], K, cameras[i].R, INTER_NEAREST, BORDER_CONSTANT, warped_masks[i]);
+		warped_imgs_sizes[i] = warped_imgs[i].size();
+	}
 
 	/* Compensate exposure errors */
 	// TODO
