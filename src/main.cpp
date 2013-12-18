@@ -51,9 +51,14 @@ int main(int argc, char** argv) {
 	HomographyBasedEstimator estimator;
 	vector<CameraParams> cameras;
 	estimator(features, pairwise_matches, cameras);
+	// Rotation matrices must be converted to floating-point numbers
+	for (unsigned int i = 0; i < cameras.size(); i++) {
+		cameras[i].R.convertTo(cameras[i].R, CV_32F);
+	}
 
 	/* Bundle adjustment for camera parameters refinement */
-	// TODO
+	BundleAdjusterRay bundleAdjuster;
+	bundleAdjuster(features, pairwise_matches, cameras);
 
 	/* Wave correction */
 	// TODO
