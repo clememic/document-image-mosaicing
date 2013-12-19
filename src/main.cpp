@@ -91,24 +91,61 @@ int main(int argc, char** argv) {
 	vector<Mat> warped_imgs(num_imgs);
 	vector<Mat> warped_masks(num_imgs);
 	vector<Point> warped_corners(num_imgs);
-	vector<Size> warped_imgs_sizes(num_imgs);
+	vector<Size> warped_sizes(num_imgs);
 	for (int i = 0; i < num_imgs; i++) {
 		Mat K;
 		cameras[i].K().convertTo(K, CV_32F);
 		// TODO Try different pixel interpolation/extrapolation methods?
 		warped_corners[i] = warper->warp(imgs[i], K, cameras[i].R, INTER_LINEAR, BORDER_REFLECT, warped_imgs[i]);
 		warper->warp(masks[i], K, cameras[i].R, INTER_NEAREST, BORDER_CONSTANT, warped_masks[i]);
-		warped_imgs_sizes[i] = warped_imgs[i].size();
+		warped_sizes[i] = warped_imgs[i].size();
 	}
 
 	/* Compensate exposure errors */
-	// TODO
+	Ptr<ExposureCompensator> compensator = ExposureCompensator::createDefault(ExposureCompensator::GAIN_BLOCKS);
+	compensator->feed(warped_corners, warped_imgs, warped_masks);
 
 	/* Find seam masks */
-	// TODO
+	// Must be done on floating-point warped images
+	for (int i = 0; i < num_imgs; i++) {
+		warped_imgs[i].convertTo(warped_imgs[i], CV_32F);
+	}
+	Ptr<SeamFinder> seam_finder = new detail::GraphCutSeamFinder(GraphCutSeamFinderBase::COST_COLOR);
+	seam_finder->find(warped_imgs, warped_corners, warped_masks);
 
 	/* Blend warped images */
-	// TODO
+	// Warp regions of interest
+	for (int i = 0; i < num_imgs; i++) {
+		Mat K;
+		cameras[i].K().convertTo(K, CV_32F);
+		Rect roi = warper->warpRoi(imgs[i].size(), K, cameras[i].R);
+		warped_corners[i] = roi.tl();
+		warped_sizes[i] = roi.size();
+	}
+	// Prepare blender
+	Size dest_size = resultRoi(warped_corners, warped_sizes).size();
+	float blend_width = sqrt(dest_size.area()) * 5 / 100;
+	Ptr<Blender> blender = Blender::createDefault(Blender::MULTI_BAND);
+	MultiBandBlender* mb = dynamic_cast<MultiBandBlender*>(static_cast<Blender*>(blender));
+	mb->setNumBands(ceil(log(blend_width/log(2)) - 1));
+	blender->prepare(warped_corners, warped_sizes);
+	// Warp and blend images
+	Mat warped_img, warped_mask, dilated_mask, seam_mask;
+	for (int i = 0; i < num_imgs; i++) {
+		Mat K;
+		cameras[i].K().convertTo(K, CV_32F);
+		// TODO Why rewarp a 2nd time?
+		warper->warp(imgs[i], K, cameras[i].R, INTER_LINEAR, BORDER_REFLECT, warped_img);
+		warper->warp(masks[i], K, cameras[i].R, INTER_NEAREST, BORDER_CONSTANT, warped_mask);
+		compensator->apply(i, warped_corners[i], warped_img, warped_mask);
+		dilate(warped_masks[i], dilated_mask, Mat());
+		resize(dilated_mask, seam_mask, warped_mask.size());
+		warped_mask = seam_mask & warped_mask;
+		blender->feed(warped_img, warped_mask, warped_corners[i]);
+	}
+	Mat result, result_mask;
+	blender->blend(result, result_mask);
+	imwrite("result.jpg", result);
 
 	return 0;
 
