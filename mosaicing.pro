@@ -4,4 +4,6 @@ LIBS += -lopencv_core -lopencv_calib3d -lopencv_features2d -lopencv_flann -lopen
 
 OBJECTS_DIR = obj
 
-SOURCES += src/main.cpp
+HEADERS += src/Registration.hpp
+
+SOURCES += src/Registration.cpp src/main.cpp

@@ -7,6 +7,8 @@
 #include <opencv2/nonfree/features2d.hpp>
 #include <opencv2/stitching/stitcher.hpp>
 
+#include "Registration.hpp"
+
 using namespace std;
 using namespace cv;
 using namespace cv::detail;
@@ -33,12 +35,7 @@ int main(int argc, char** argv) {
 	int num_imgs = imgs.size();
 
 	/* Find features in images */
-	SurfFeaturesFinder surf;
-	vector<ImageFeatures> features(num_imgs);
-	for (int i = 0; i < num_imgs; i++) {
-		surf(imgs[i], features[i]);
-		features[i].img_idx = i;
-	}
+	vector<ImageFeatures> features = Registration::getSurfFeatures(imgs);
 
 	/* Match features */
 	BestOf2NearestMatcher matcher;
