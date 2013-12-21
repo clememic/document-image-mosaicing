@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <string>
 #include <vector>
@@ -16,7 +15,7 @@ void readme();
 
 int main(int argc, char** argv) {
 
-	if (argc < 3) {
+	if (argc < 3 || argc > 5) {
 		readme();
 		return -1;
 	}
@@ -152,5 +151,5 @@ int main(int argc, char** argv) {
 }
 
 void readme() {
-	cerr << "Document image mosaicing. Usage: ./mosaicing img1 img2 [...imgN]" << endl;
+	cerr << "Document image mosaicing. Usage: ./mosaicing img1 img2 [img3 img4]" << endl;
 }
