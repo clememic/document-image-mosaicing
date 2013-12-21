@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
 	bundleAdjuster(features, pairwise_matches, cameras);
 
 	/* Wave correction */
-	// TODO
+	// TODO Useless for documents? (not building a classic panorama)
 
 	/* Warp images */
 	// Compute median focal length between cameras for warping scale
@@ -106,41 +106,28 @@ int main(int argc, char** argv) {
 
 	/* Find seam masks */
 	// Must be done on floating-point warped images
+	vector<Mat> warped_imgs_f(num_imgs);
 	for (int i = 0; i < num_imgs; i++) {
-		warped_imgs[i].convertTo(warped_imgs[i], CV_32F);
+		warped_imgs[i].convertTo(warped_imgs_f[i], CV_32F);
 	}
 	Ptr<SeamFinder> seam_finder = new detail::GraphCutSeamFinder(GraphCutSeamFinderBase::COST_COLOR);
-	seam_finder->find(warped_imgs, warped_corners, warped_masks);
+	seam_finder->find(warped_imgs_f, warped_corners, warped_masks);
+	warped_imgs_f.clear();
 
 	/* Blend warped images */
-	// Warp regions of interest
-	for (int i = 0; i < num_imgs; i++) {
-		Mat K;
-		cameras[i].K().convertTo(K, CV_32F);
-		Rect roi = warper->warpRoi(imgs[i].size(), K, cameras[i].R);
-		warped_corners[i] = roi.tl();
-		warped_sizes[i] = roi.size();
-	}
-	// Prepare blender
 	Size dest_size = resultRoi(warped_corners, warped_sizes).size();
 	float blend_width = sqrt(dest_size.area()) * 5 / 100;
 	Ptr<Blender> blender = Blender::createDefault(Blender::MULTI_BAND);
 	MultiBandBlender* mb = dynamic_cast<MultiBandBlender*>(static_cast<Blender*>(blender));
 	mb->setNumBands(ceil(log(blend_width/log(2)) - 1));
 	blender->prepare(warped_corners, warped_sizes);
-	// Warp and blend images
-	Mat warped_img, warped_mask, dilated_mask, seam_mask;
+	Mat dilated_mask, seam_mask;
 	for (int i = 0; i < num_imgs; i++) {
-		Mat K;
-		cameras[i].K().convertTo(K, CV_32F);
-		// TODO Why rewarp a 2nd time?
-		warper->warp(imgs[i], K, cameras[i].R, INTER_LINEAR, BORDER_REFLECT, warped_img);
-		warper->warp(masks[i], K, cameras[i].R, INTER_NEAREST, BORDER_CONSTANT, warped_mask);
-		compensator->apply(i, warped_corners[i], warped_img, warped_mask);
+		compensator->apply(i, warped_corners[i], warped_imgs[i], warped_masks[i]);
 		dilate(warped_masks[i], dilated_mask, Mat());
-		resize(dilated_mask, seam_mask, warped_mask.size());
-		warped_mask = seam_mask & warped_mask;
-		blender->feed(warped_img, warped_mask, warped_corners[i]);
+		resize(dilated_mask, seam_mask, warped_masks[i].size());
+		warped_masks[i] = seam_mask & warped_masks[i];
+		blender->feed(warped_imgs[i], warped_masks[i], warped_corners[i]);
 	}
 	Mat result, result_mask;
 	blender->blend(result, result_mask);
