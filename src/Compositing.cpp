@@ -33,7 +33,7 @@ void Compositing::warpImages(const vector<Mat>& imgs, const vector<CameraParams>
 		// Warp image mask
 		Mat mask(imgs[i].size(), CV_8U);
 		mask.setTo(Scalar::all(255));
-		warper->warp(mask, K, cameras[i].R, INTER_LINEAR, BORDER_REFLECT, warped_masks[i]);
+		warper->warp(mask, K, cameras[i].R, INTER_NEAREST, BORDER_CONSTANT, warped_masks[i]);
 	}
 
 }
