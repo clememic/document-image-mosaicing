@@ -57,8 +57,7 @@ int main(int argc, char** argv) {
 	Compositing::graphCutSeamEstimation(warped_imgs, warped_corners, warped_masks);
 
 	/* Compensate exposure errors */
-	Ptr<ExposureCompensator> compensator = ExposureCompensator::createDefault(ExposureCompensator::GAIN_BLOCKS);
-	compensator->feed(warped_corners, warped_imgs, warped_masks);
+	Compositing::gainBlocksExposureCompensation(warped_corners, warped_imgs, warped_masks);
 
 	/* Blend warped images */
 	vector<Size> warped_sizes(num_imgs);
@@ -73,7 +72,6 @@ int main(int argc, char** argv) {
 	blender->prepare(warped_corners, warped_sizes);
 	Mat dilated_mask, seam_mask;
 	for (int i = 0; i < num_imgs; i++) {
-		compensator->apply(i, warped_corners[i], warped_imgs[i], warped_masks[i]);
 		dilate(warped_masks[i], dilated_mask, Mat());
 		resize(dilated_mask, seam_mask, warped_masks[i].size());
 		warped_masks[i] = seam_mask & warped_masks[i];

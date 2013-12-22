@@ -64,3 +64,22 @@ void Compositing::estimateSeams(const vector<Mat>& imgs, const vector<Point>& co
 		vector<Mat>& masks, SeamFinder* seam_finder) {
 	seam_finder->find(imgs, corners, masks);
 }
+
+void Compositing::gainExposureCompensation(vector<Point>& corners, vector<Mat>& imgs, const vector<Mat>& masks) {
+	Ptr<ExposureCompensator> exposure_compensator = new GainCompensator();
+	compensateExposureErrors(corners, imgs, masks, exposure_compensator);
+}
+
+void Compositing::gainBlocksExposureCompensation(vector<Point>& corners, vector<Mat>& imgs, const vector<Mat>& masks,
+		int bl_width, int bl_height) {
+	Ptr<ExposureCompensator> exposure_compensator = new BlocksGainCompensator(bl_width, bl_height);
+	compensateExposureErrors(corners, imgs, masks, exposure_compensator);
+}
+
+void Compositing::compensateExposureErrors(vector<Point>& corners, vector<Mat>& imgs, const vector<Mat>& masks,
+		ExposureCompensator* exposure_compensator) {
+	exposure_compensator->feed(corners, imgs, masks);
+	for (unsigned int i = 0; i < imgs.size(); i++) {
+		exposure_compensator->apply(i, corners[i], imgs[i], masks[i]);
+	}
+}

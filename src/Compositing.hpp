@@ -20,10 +20,19 @@ public:
 	static void graphCutSeamEstimation(const std::vector<cv::Mat>& imgs, const std::vector<cv::Point>& corners,
 		std::vector<cv::Mat>& masks, int cost_type=cv::detail::GraphCutSeamFinder::COST_COLOR);
 
+	static void gainExposureCompensation(std::vector<cv::Point>& corners, std::vector<cv::Mat>& imgs,
+		const std::vector<cv::Mat>& masks);
+
+	static void gainBlocksExposureCompensation(std::vector<cv::Point>& corners, std::vector<cv::Mat>& imgs,
+		const std::vector<cv::Mat>& masks, int bl_width=32, int bl_height=32);
+
 private:
 
 	static void estimateSeams(const std::vector<cv::Mat>& imgs, const std::vector<cv::Point>& corners,
 		std::vector<cv::Mat>& masks, cv::detail::SeamFinder* seam_finder);
+
+	static void compensateExposureErrors(std::vector<cv::Point>& corners, std::vector<cv::Mat>& imgs,
+		const std::vector<cv::Mat>& masks, cv::detail::ExposureCompensator* exposure_compensator);
 
 };
 
