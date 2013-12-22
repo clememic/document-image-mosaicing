@@ -5,7 +5,8 @@ using namespace cv;
 using namespace cv::detail;
 
 void Compositing::warpImages(const vector<Mat>& imgs, const vector<CameraParams>& cameras,
-		vector<Mat>& warped_imgs, vector<Point>& warped_corners, vector<Mat>& warped_masks) {
+		vector<Mat>& warped_imgs, vector<Point>& warped_corners, vector<Mat>& warped_masks,
+		vector<Size>& warped_sizes) {
 
 	// Compute warping scale (median focal length between cameras)
 	// TODO Why not use mean focal instead?
@@ -30,6 +31,7 @@ void Compositing::warpImages(const vector<Mat>& imgs, const vector<CameraParams>
 		Mat K;
 		cameras[i].K().convertTo(K, CV_32F);
 		warped_corners[i] = warper->warp(imgs[i], K, cameras[i].R, INTER_LINEAR, BORDER_REFLECT, warped_imgs[i]);
+		warped_sizes[i] = warped_imgs[i].size();
 		// Warp image mask
 		Mat mask(imgs[i].size(), CV_8U);
 		mask.setTo(Scalar::all(255));
@@ -82,4 +84,32 @@ void Compositing::compensateExposureErrors(vector<Point>& corners, vector<Mat>& 
 	for (unsigned int i = 0; i < imgs.size(); i++) {
 		exposure_compensator->apply(i, corners[i], imgs[i], masks[i]);
 	}
+}
+
+Mat Compositing::blendImagesMultiBand(const vector<Mat>& imgs, const vector<Point>& corners, const vector<Mat>& masks,
+		const vector<Size>& sizes, float blend_strength) {
+	float blend_width = getBlendWidth(sizes, corners, blend_strength);
+	int num_bands = (int) ceil(log(blend_width) / log(2.)) - 1.;
+	Ptr<Blender> blender = new detail::MultiBandBlender(false, num_bands);
+	return blendImages(imgs, corners, masks, sizes, blender);
+}
+
+Mat Compositing::blendImages(const vector<Mat>& imgs, const vector<Point>& corners, const vector<Mat>& masks,
+		const vector<Size>& sizes, Blender* blender) {
+	blender->prepare(corners, sizes);
+	Mat mask, dilated_mask, seam_mask;
+	for (unsigned int i = 0; i < imgs.size(); i++) {
+		dilate(masks[i], dilated_mask, Mat());
+		resize(dilated_mask, seam_mask, masks[i].size());
+		mask = seam_mask & masks[i];
+		blender->feed(imgs[i], mask, corners[i]);
+	}
+	Mat result, result_mask;
+	blender->blend(result, result_mask);
+	return result;
+}
+
+float Compositing::getBlendWidth(const vector<Size>& sizes, const vector<Point>& corners, float blend_strength) {
+	Size dest_size = resultRoi(corners, sizes).size();
+	return sqrt((float) dest_size.area()) * blend_strength / 100.f;
 }

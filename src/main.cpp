@@ -51,7 +51,8 @@ int main(int argc, char** argv) {
 	vector<Mat> warped_imgs(num_imgs);
 	vector<Mat> warped_masks(num_imgs);
 	vector<Point> warped_corners(num_imgs);
-	Compositing::warpImages(imgs, cameras, warped_imgs, warped_corners, warped_masks);
+	vector<Size> warped_sizes(num_imgs);
+	Compositing::warpImages(imgs, cameras, warped_imgs, warped_corners, warped_masks, warped_sizes);
 
 	/* Find seam masks */
 	Compositing::graphCutSeamEstimation(warped_imgs, warped_corners, warped_masks);
@@ -60,25 +61,8 @@ int main(int argc, char** argv) {
 	Compositing::gainBlocksExposureCompensation(warped_corners, warped_imgs, warped_masks);
 
 	/* Blend warped images */
-	vector<Size> warped_sizes(num_imgs);
-	for (int i = 0; i < num_imgs; i++) {
-		warped_sizes[i] = warped_imgs[i].size();
-	}
-	Size dest_size = resultRoi(warped_corners, warped_sizes).size();
-	float blend_width = sqrt(dest_size.area()) * 5 / 100;
-	Ptr<Blender> blender = Blender::createDefault(Blender::MULTI_BAND);
-	MultiBandBlender* mb = dynamic_cast<MultiBandBlender*>(static_cast<Blender*>(blender));
-	mb->setNumBands(ceil(log(blend_width/log(2)) - 1));
-	blender->prepare(warped_corners, warped_sizes);
-	Mat dilated_mask, seam_mask;
-	for (int i = 0; i < num_imgs; i++) {
-		dilate(warped_masks[i], dilated_mask, Mat());
-		resize(dilated_mask, seam_mask, warped_masks[i].size());
-		warped_masks[i] = seam_mask & warped_masks[i];
-		blender->feed(warped_imgs[i], warped_masks[i], warped_corners[i]);
-	}
-	Mat result, result_mask;
-	blender->blend(result, result_mask);
+	Mat result = Compositing:: blendImagesMultiBand(warped_imgs, warped_corners, warped_masks, warped_sizes);
+
 	imwrite("result.jpg", result);
 
 	return 0;
