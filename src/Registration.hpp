@@ -17,10 +17,25 @@ public:
 	static std::vector<cv::detail::MatchesInfo> getMatches(const std::vector<cv::detail::ImageFeatures> &features,
 		float match_conf=0.3f, int num_matches_thresh1=6, int num_matches_thresh2=6);
 
+	static std::vector<cv::detail::CameraParams> estimateHomographies(const std::vector<cv::detail::ImageFeatures>& features,
+		const std::vector<cv::detail::MatchesInfo>& pairwise_matches);
+
+	static void bundleAdjusterReproj(const std::vector<cv::detail::ImageFeatures>& features,
+		const std::vector<cv::detail::MatchesInfo>& pairwise_matches, std::vector<cv::detail::CameraParams>& cameras,
+		double conf_thresh=1.);
+
+	static void bundleAdjusterRay(const std::vector<cv::detail::ImageFeatures>& features,
+		const std::vector<cv::detail::MatchesInfo>& pairwise_matches, std::vector<cv::detail::CameraParams>& cameras,
+		double conf_thresh=1.);
+
 private:
 
 	static std::vector<cv::detail::ImageFeatures> getFeatures(const std::vector<cv::Mat>& imgs,
 		cv::detail::FeaturesFinder* features_finder);
+
+	static void bundleAdjuster(const std::vector<cv::detail::ImageFeatures>& features,
+		const std::vector<cv::detail::MatchesInfo>& pairwise_matches, std::vector<cv::detail::CameraParams>& cameras,
+		cv::detail::BundleAdjusterBase* bundleAdjuster, double conf_thresh=1.);
 
 };
 

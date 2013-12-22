@@ -41,20 +41,10 @@ int main(int argc, char** argv) {
 	vector<MatchesInfo> pairwise_matches = Registration::getMatches(features);
 
 	/* Estimate homographies between images using feature matches */
-	HomographyBasedEstimator estimator;
-	vector<CameraParams> cameras;
-	estimator(features, pairwise_matches, cameras);
-	// Rotation matrices must be converted to floating-point numbers
-	for (unsigned int i = 0; i < cameras.size(); i++) {
-		cameras[i].R.convertTo(cameras[i].R, CV_32F);
-	}
+	vector<CameraParams> cameras = Registration::estimateHomographies(features, pairwise_matches);
 
 	/* Bundle adjustment for camera parameters refinement */
-	BundleAdjusterRay bundleAdjuster;
-	bundleAdjuster(features, pairwise_matches, cameras);
-
-	/* Wave correction */
-	// TODO Useless for documents? (not building a classic panorama)
+	Registration::bundleAdjusterRay(features, pairwise_matches, cameras);
 
 	/* Warp images */
 	// Compute median focal length between cameras for warping scale

@@ -36,3 +36,33 @@ vector<MatchesInfo> Registration::getMatches(const vector<ImageFeatures> &featur
 	matcher->collectGarbage();
 	return pairwise_matches;
 }
+
+vector<CameraParams> Registration::estimateHomographies(const vector<ImageFeatures>& features,
+		const vector<MatchesInfo>& pairwise_matches) {
+	Ptr<Estimator> estimator = new HomographyBasedEstimator();
+	vector<CameraParams> cameras;
+	(*estimator)(features, pairwise_matches, cameras);
+	return cameras;
+}
+
+void Registration::bundleAdjusterReproj(const vector<ImageFeatures>& features, const vector<MatchesInfo>& pairwise_matches,
+		vector<CameraParams>& cameras, double conf_thresh) {
+	Ptr<BundleAdjusterBase> bundle_adjuster = new BundleAdjusterReproj();
+	Registration::bundleAdjuster(features, pairwise_matches, cameras, bundle_adjuster, conf_thresh);
+}
+
+void Registration::bundleAdjusterRay(const vector<ImageFeatures>& features, const vector<MatchesInfo>& pairwise_matches,
+		vector<CameraParams>& cameras, double conf_thresh) {
+	Ptr<BundleAdjusterBase> bundle_adjuster = new BundleAdjusterRay();
+	Registration::bundleAdjuster(features, pairwise_matches, cameras, bundle_adjuster, conf_thresh);
+}
+
+void Registration::bundleAdjuster(const vector<ImageFeatures>& features, const vector<MatchesInfo>& pairwise_matches,
+		vector<CameraParams>& cameras, BundleAdjusterBase* bundle_adjuster, double conf_thresh) {
+	// Rotation matrices must be converted to floating-point numbers
+	for (unsigned int i = 0; i < cameras.size(); i++) {
+		cameras[i].R.convertTo(cameras[i].R, CV_32F);
+	}
+	bundle_adjuster->setConfThresh(conf_thresh);
+	(*bundle_adjuster)(features, pairwise_matches, cameras);
+}
