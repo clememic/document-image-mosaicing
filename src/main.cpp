@@ -38,10 +38,7 @@ int main(int argc, char** argv) {
 	vector<ImageFeatures> features = Registration::getSurfFeatures(imgs);
 
 	/* Match features */
-	BestOf2NearestMatcher matcher;
-	vector<MatchesInfo> pairwise_matches;
-	matcher(features, pairwise_matches);
-	matcher.collectGarbage();
+	vector<MatchesInfo> pairwise_matches = Registration::getMatches(features);
 
 	/* Estimate homographies between images using feature matches */
 	HomographyBasedEstimator estimator;

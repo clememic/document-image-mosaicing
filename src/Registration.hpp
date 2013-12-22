@@ -14,6 +14,9 @@ public:
 	static std::vector<cv::detail::ImageFeatures> getOrbFeatures(const std::vector<cv::Mat>& imgs,
 		cv::Size grid_size=cv::Size(3,1), int nfeatures=1500, float scaleFactor=1.3f, int nlevels=5);
 
+	static std::vector<cv::detail::MatchesInfo> getMatches(const std::vector<cv::detail::ImageFeatures> &features,
+		float match_conf=0.3f, int num_matches_thresh1=6, int num_matches_thresh2=6);
+
 private:
 
 	static std::vector<cv::detail::ImageFeatures> getFeatures(const std::vector<cv::Mat>& imgs,

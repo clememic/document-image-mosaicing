@@ -26,3 +26,13 @@ vector<ImageFeatures> Registration::getFeatures(const vector<Mat>& imgs, Feature
 	features_finder->collectGarbage();
 	return features;
 }
+
+vector<MatchesInfo> Registration::getMatches(const vector<ImageFeatures> &features, float match_conf,
+		int num_matches_thresh1, int num_matches_thresh2) {
+	Ptr<FeaturesMatcher> matcher = new BestOf2NearestMatcher(false, match_conf, num_matches_thresh1,
+		 num_matches_thresh2);
+	vector<MatchesInfo> pairwise_matches;
+	(*matcher)(features, pairwise_matches);
+	matcher->collectGarbage();
+	return pairwise_matches;
+}
