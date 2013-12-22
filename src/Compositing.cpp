@@ -94,6 +94,17 @@ Mat Compositing::blendImagesMultiBand(const vector<Mat>& imgs, const vector<Poin
 	return blendImages(imgs, corners, masks, sizes, blender);
 }
 
+Mat Compositing::blendImagesFeather(const vector<Mat>& imgs, const vector<Point>& corners, const vector<Mat>& masks,
+		const vector<Size>& sizes, float blend_strength) {
+	float blend_width = getBlendWidth(sizes, corners, blend_strength);
+	Ptr<Blender> blender = new detail::FeatherBlender(1.f / blend_width);
+	vector<Mat> imgs_s(imgs.size());
+	for (unsigned int i = 0; i < imgs.size(); i++) {
+		imgs[i].convertTo(imgs_s[i], CV_16S);
+	}
+	return blendImages(imgs_s, corners, masks, sizes, blender);
+}
+
 Mat Compositing::blendImages(const vector<Mat>& imgs, const vector<Point>& corners, const vector<Mat>& masks,
 		const vector<Size>& sizes, Blender* blender) {
 	blender->prepare(corners, sizes);

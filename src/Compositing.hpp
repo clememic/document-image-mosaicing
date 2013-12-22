@@ -30,6 +30,8 @@ public:
 	static cv::Mat blendImagesMultiBand(const std::vector<cv::Mat>& imgs, const std::vector<cv::Point>& corners,
 		const std::vector<cv::Mat>& masks, const std::vector<cv::Size>& sizes, float blend_strength=5.f);
 
+	static cv::Mat blendImagesFeather(const std::vector<cv::Mat>& imgs, const std::vector<cv::Point>& corners,
+		const std::vector<cv::Mat>& masks, const std::vector<cv::Size>& sizes, float blend_strength=1.f);
 private:
 
 	static void estimateSeams(const std::vector<cv::Mat>& imgs, const std::vector<cv::Point>& corners,
