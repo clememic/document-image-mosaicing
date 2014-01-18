@@ -32,6 +32,8 @@ public:
 
 	static cv::Mat blendImagesFeather(const std::vector<cv::Mat>& imgs, const std::vector<cv::Point>& corners,
 		const std::vector<cv::Mat>& masks, const std::vector<cv::Size>& sizes, float blend_strength=1.f);
+	static cv::Mat noBlending(const std::vector<cv::Mat>& imgs, const std::vector<cv::Point>& corners, const std::vector<cv::Mat>& masks,
+			const std::vector<cv::Size>& sizes);
 private:
 
 	static void estimateSeams(const std::vector<cv::Mat>& imgs, const std::vector<cv::Point>& corners,

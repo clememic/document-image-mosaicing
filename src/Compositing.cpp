@@ -120,6 +120,20 @@ Mat Compositing::blendImages(const vector<Mat>& imgs, const vector<Point>& corne
 	return result;
 }
 
+Mat Compositing::noBlending(const vector<Mat>& imgs, const vector<Point>& corners, const vector<Mat>& masks,
+		const vector<Size>& sizes) {
+	Ptr<Blender> blender = Blender::createDefault(Blender::NO);
+	blender->prepare(corners, sizes);
+	vector<Mat> imgs_s(imgs.size());
+	for (size_t i = 0; i < imgs.size(); i++) {
+		imgs[i].convertTo(imgs_s[i], CV_16S);
+		blender->feed(imgs_s[i], masks[i], corners[i]);
+	}
+	Mat result, result_mask;
+	blender->blend(result, result_mask);
+	return result;
+}
+
 float Compositing::getBlendWidth(const vector<Size>& sizes, const vector<Point>& corners, float blend_strength) {
 	Size dest_size = resultRoi(corners, sizes).size();
 	return sqrt((float) dest_size.area()) * blend_strength / 100.f;
